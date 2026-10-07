@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import json
 import subprocess
+import time
 from typing import Any, Dict, List, Optional
 from urllib.parse import quote
 
@@ -14,14 +15,22 @@ class GithubError(RuntimeError):
 
 
 class GithubClient:
-    def __init__(self, executable: str = "gh") -> None:
+    def __init__(self, executable: str = "gh", search_interval_seconds: float = 3.0) -> None:
         self.executable = executable
+        self.search_interval_seconds = search_interval_seconds
+        self._last_search_request = 0.0
 
     def request(self, endpoint: str, fields: Optional[Dict[str, str]] = None) -> Any:
+        if endpoint.startswith("search/"):
+            elapsed = time.monotonic() - self._last_search_request
+            if self._last_search_request and elapsed < self.search_interval_seconds:
+                time.sleep(self.search_interval_seconds - elapsed)
         command = [self.executable, "api", "--method", "GET", endpoint]
         for key, value in (fields or {}).items():
             command.extend(["-f", f"{key}={value}"])
         result = subprocess.run(command, check=False, capture_output=True, text=True)
+        if endpoint.startswith("search/"):
+            self._last_search_request = time.monotonic()
         if result.returncode != 0:
             detail = result.stderr.strip() or result.stdout.strip() or "unknown gh error"
             raise GithubError(f"GitHub request failed for {endpoint}: {detail}")

@@ -3,13 +3,10 @@
     "queries": [
       "topic:ai-agents stars:50 archived:false",
       "topic:developer-tools stars:50 archived:false",
-      "topic:llm stars:100 archived:false",
-      "topic:context-engineering stars:20 archived:false",
-      "topic:machine-learning stars:200 archived:false"
+      "topic:llm stars:100 archived:false"
     ],
     "issue_queries": [
-      "agent OR llm OR mcp OR developer-tool is:issue is:open no:assignee label:\"good first issue\"",
-      "agent OR llm OR mcp OR developer-tool is:issue is:open no:assignee label:\"help wanted\""
+      "agent OR llm OR mcp OR developer-tool is:issue is:open no:assignee label:\"good first issue\",\"help wanted\""
     ],
     "languages": ["Python", "TypeScript", "JavaScript", "Rust", "Go"],
     "relevance_terms": [
@@ -18,7 +15,7 @@
     ],
     "excluded_owners": ["wuzhongyanqiu"],
     "excluded_repositories": [],
-    "max_results_per_query": 12,
+    "max_results_per_query": 20,
     "max_candidates": 20
   },
   "thresholds": {

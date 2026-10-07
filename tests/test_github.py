@@ -11,7 +11,7 @@ class GithubClientTest(unittest.TestCase):
         run.return_value.returncode = 0
         run.return_value.stdout = json.dumps({"ok": True})
         run.return_value.stderr = ""
-        result = GithubClient().request("search/repositories", {"q": "topic:agent"})
+        result = GithubClient(search_interval_seconds=0).request("search/repositories", {"q": "topic:agent"})
         self.assertEqual(result, {"ok": True})
         command = run.call_args.args[0]
         self.assertEqual(command[:4], ["gh", "api", "--method", "GET"])
@@ -23,7 +23,7 @@ class GithubClientTest(unittest.TestCase):
         run.return_value.stdout = ""
         run.return_value.stderr = "rate limit"
         with self.assertRaisesRegex(GithubError, "rate limit"):
-            GithubClient().request("search/repositories")
+            GithubClient(search_interval_seconds=0).request("search/repositories")
         self.assertNotIn("token", " ".join(run.call_args.args[0]).lower())
 
     def test_account_audit_uses_authenticated_endpoint_for_self(self) -> None:
