@@ -1,0 +1,41 @@
+{
+  "discovery": {
+    "queries": [
+      "topic:ai-agents stars:50 archived:false",
+      "topic:developer-tools stars:50 archived:false",
+      "topic:llm stars:100 archived:false",
+      "topic:context-engineering stars:20 archived:false",
+      "topic:machine-learning stars:200 archived:false"
+    ],
+    "issue_queries": [
+      "agent OR llm OR mcp OR developer-tool is:issue is:open no:assignee label:\"good first issue\"",
+      "agent OR llm OR mcp OR developer-tool is:issue is:open no:assignee label:\"help wanted\""
+    ],
+    "languages": ["Python", "TypeScript", "JavaScript", "Rust", "Go"],
+    "relevance_terms": [
+      "agent", "llm", "model context protocol", "mcp", "retrieval", "rag",
+      "developer tools", "coding agent", "context engineering", "evaluation"
+    ],
+    "excluded_owners": ["wuzhongyanqiu"],
+    "excluded_repositories": [],
+    "max_results_per_query": 12,
+    "max_candidates": 20
+  },
+  "thresholds": {
+    "project_score": 58,
+    "contribution_score": 55,
+    "max_daily_draft_prs": 1,
+    "max_repository_age_without_push_days": 120
+  },
+  "account_audit": {
+    "owner": "wuzhongyanqiu",
+    "protected_repositories": [
+      "wuzhongyanqiu",
+      "advanced-research-control",
+      "daily-content-factory",
+      "dsh-plugins",
+      "llm-landscape-dashboard",
+      "stock-intelligence-monitor"
+    ]
+  }
+}

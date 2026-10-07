@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "open-source-contribution-radar"
+version = "0.1.0"
+description = "Discover valuable open-source projects and identify high-quality contribution opportunities."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "wuzhongyanqiu" }]
+keywords = ["open-source", "github", "contributions", "automation"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+]
+dependencies = []
+
+[project.scripts]
+open-source-radar = "open_source_radar.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
