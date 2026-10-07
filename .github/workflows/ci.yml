@@ -11,6 +11,8 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: src
     strategy:
       matrix:
         python-version: ["3.9", "3.13"]
