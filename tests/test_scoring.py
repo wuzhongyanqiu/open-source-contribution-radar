@@ -18,10 +18,12 @@ def config() -> RadarConfig:
         relevance_terms=("agent", "evaluation"),
         excluded_owners=frozenset(),
         excluded_repositories=frozenset(),
+        excluded_issue_labels=frozenset({"security"}),
         max_results_per_query=10,
         max_candidates=20,
         project_score=55,
         contribution_score=55,
+        minimum_stars=50,
         stale_days=180,
         audit_owner="owner",
         protected_repositories=frozenset({"production"}),
@@ -76,6 +78,29 @@ class ScoringTest(unittest.TestCase):
         )
         result = score_candidate(candidate, config(), now=NOW)
         self.assertFalse(is_eligible(result, 55, 55))
+
+    def test_low_audience_candidate_is_not_eligible(self) -> None:
+        candidate = RepositoryCandidate(
+            full_name="example/tiny-agent",
+            url="https://github.com/example/tiny-agent",
+            description="Agent framework",
+            language="Python",
+            topics=["agent"],
+            stars=4,
+            forks=1,
+            open_issues=3,
+            pushed_at="2026-10-07T00:00:00Z",
+            created_at="2026-01-01T00:00:00Z",
+            license_id="MIT",
+            archived=False,
+            fork=False,
+            has_contributing=True,
+            has_ci=True,
+            has_tests=True,
+            issues=[IssueCandidate(1, "Add parser test", "https://example/1", ["good first issue"], "", "")],
+        )
+        result = score_candidate(candidate, config(), now=NOW)
+        self.assertFalse(is_eligible(result, 55, 55, 50))
 
     def test_empty_repository_is_delete_candidate(self) -> None:
         repository = AccountRepository(

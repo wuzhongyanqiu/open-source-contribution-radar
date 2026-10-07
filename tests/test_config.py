@@ -11,8 +11,8 @@ class ConfigTest(unittest.TestCase):
         with TemporaryDirectory() as directory:
             path = Path(directory) / "radar.json"
             path.write_text(json.dumps({
-                "discovery": {"queries": ["topic:agent"], "issue_queries": ["agent is:issue"], "excluded_owners": ["Example"]},
-                "thresholds": {"project_score": 60, "contribution_score": 50},
+                "discovery": {"queries": ["topic:agent"], "issue_queries": ["agent is:issue"], "excluded_owners": ["Example"], "excluded_issue_labels": ["Security"]},
+                "thresholds": {"project_score": 60, "contribution_score": 50, "minimum_stars": 25},
                 "account_audit": {"owner": "owner", "protected_repositories": ["Keep"]},
             }), encoding="utf-8")
             config = load_config(path)
@@ -20,7 +20,9 @@ class ConfigTest(unittest.TestCase):
         self.assertEqual(config.issue_queries, ("agent is:issue",))
         self.assertIn("example", config.excluded_owners)
         self.assertIn("keep", config.protected_repositories)
+        self.assertIn("security", config.excluded_issue_labels)
         self.assertEqual(config.project_score, 60)
+        self.assertEqual(config.minimum_stars, 25)
 
     def test_requires_query(self) -> None:
         with TemporaryDirectory() as directory:

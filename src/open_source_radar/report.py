@@ -15,8 +15,8 @@ def write_json(path: Path, payload: dict[str, Any]) -> None:
     temporary.replace(path)
 
 
-def write_discovery_report(path: Path, candidates: list[RepositoryCandidate], thresholds: tuple[int, int]) -> None:
-    project_threshold, contribution_threshold = thresholds
+def write_discovery_report(path: Path, candidates: list[RepositoryCandidate], thresholds: tuple[int, int, int]) -> None:
+    project_threshold, contribution_threshold, minimum_stars = thresholds
     lines = [
         "# Open-source contribution radar",
         "",
@@ -26,7 +26,7 @@ def write_discovery_report(path: Path, candidates: list[RepositoryCandidate], th
         "",
     ]
     for index, candidate in enumerate(candidates, 1):
-        eligible = is_eligible(candidate, project_threshold, contribution_threshold)
+        eligible = is_eligible(candidate, project_threshold, contribution_threshold, minimum_stars)
         lines.extend([
             f"## {index}. [{candidate.full_name}]({candidate.url})",
             "",
@@ -70,10 +70,11 @@ def write_account_report(path: Path, owner: str, repositories: list[AccountRepos
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-def is_eligible(candidate: RepositoryCandidate, project_threshold: int, contribution_threshold: int) -> bool:
+def is_eligible(candidate: RepositoryCandidate, project_threshold: int, contribution_threshold: int, minimum_stars: int = 0) -> bool:
     return (
         candidate.project_score >= project_threshold
         and candidate.contribution_score >= contribution_threshold
+        and candidate.stars >= minimum_stars
         and bool(candidate.issues)
         and bool(candidate.license_id)
         and candidate.license_id != "NOASSERTION"

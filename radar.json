@@ -15,12 +15,14 @@
     ],
     "excluded_owners": ["wuzhongyanqiu"],
     "excluded_repositories": [],
+    "excluded_issue_labels": ["security", "bounty", "hackathon", "needs-human", "hive/likely-done"],
     "max_results_per_query": 20,
     "max_candidates": 20
   },
   "thresholds": {
-    "project_score": 58,
+    "project_score": 65,
     "contribution_score": 55,
+    "minimum_stars": 50,
     "max_daily_draft_prs": 1,
     "max_repository_age_without_push_days": 120
   },

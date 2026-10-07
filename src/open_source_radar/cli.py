@@ -47,6 +47,9 @@ def _scan(config: RadarConfig, state_dir: Path, client: GithubClient) -> int:
     discovered_issues = {}
     for query in config.issue_queries:
         for full_name, issue in client.search_issues(query, config.max_results_per_query):
+            issue_labels = {label.lower() for label in issue.labels}
+            if issue_labels & config.excluded_issue_labels:
+                continue
             key = full_name.lower()
             discovered_issues.setdefault(key, {})[issue.number] = issue
             if key not in found:
@@ -69,13 +72,20 @@ def _scan(config: RadarConfig, state_dir: Path, client: GithubClient) -> int:
     candidates.sort(key=lambda item: (item.contribution_score, item.project_score, item.stars), reverse=True)
     stamp = datetime.now().astimezone().date().isoformat()
     reports = state_dir / "reports"
-    write_discovery_report(reports / f"discovery-{stamp}.md", candidates, (config.project_score, config.contribution_score))
+    write_discovery_report(
+        reports / f"discovery-{stamp}.md",
+        candidates,
+        (config.project_score, config.contribution_score, config.minimum_stars),
+    )
     write_json(reports / f"discovery-{stamp}.json", {"generated_at": datetime.now(timezone.utc).isoformat(), "candidates": [item.to_dict() for item in candidates]})
     write_json(
         state_dir / "state.json",
         {"updated_at": datetime.now(timezone.utc).isoformat(), "repositories": {item.full_name.lower(): {"stars": item.stars, "forks": item.forks} for item in candidates}},
     )
-    eligible = [item for item in candidates if is_eligible(item, config.project_score, config.contribution_score)]
+    eligible = [
+        item for item in candidates
+        if is_eligible(item, config.project_score, config.contribution_score, config.minimum_stars)
+    ]
     print(f"Scanned {len(candidates)} candidates; {len(eligible)} eligible for agent review")
     print(reports / f"discovery-{stamp}.md")
     return 0
