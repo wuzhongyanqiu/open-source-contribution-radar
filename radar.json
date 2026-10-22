@@ -1,9 +1,9 @@
 {
   "discovery": {
     "queries": [
-      "topic:ai-agents stars:50 archived:false",
-      "topic:developer-tools stars:50 archived:false",
-      "topic:llm stars:100 archived:false"
+      "topic:ai-agents stars:>=50 archived:false",
+      "topic:developer-tools stars:>=50 archived:false",
+      "topic:llm stars:>=100 archived:false"
     ],
     "issue_queries": [
       "agent OR llm OR mcp OR developer-tool is:issue is:open no:assignee label:\"good first issue\",\"help wanted\""

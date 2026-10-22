@@ -36,8 +36,14 @@ def _load_previous(path: Path) -> dict[str, dict[str, int]]:
 
 def _scan(config: RadarConfig, state_dir: Path, client: GithubClient) -> int:
     found = {}
+    errors = []
     for query in config.queries:
-        for candidate in client.search_repositories(query, config.max_results_per_query):
+        try:
+            results = client.search_repositories(query, config.max_results_per_query)
+        except GithubError as error:
+            errors.append({"stage": "repository_search", "query": query, "error": str(error)})
+            continue
+        for candidate in results:
             owner = candidate.full_name.split("/", 1)[0].lower()
             if owner in config.excluded_owners or candidate.full_name.lower() in config.excluded_repositories:
                 continue
@@ -46,7 +52,12 @@ def _scan(config: RadarConfig, state_dir: Path, client: GithubClient) -> int:
             found[candidate.full_name.lower()] = candidate
     discovered_issues = {}
     for query in config.issue_queries:
-        for full_name, issue in client.search_issues(query, config.max_results_per_query):
+        try:
+            results = client.search_issues(query, config.max_results_per_query)
+        except GithubError as error:
+            errors.append({"stage": "issue_search", "query": query, "error": str(error)})
+            continue
+        for full_name, issue in results:
             issue_labels = {label.lower() for label in issue.labels}
             if issue_labels & config.excluded_issue_labels:
                 continue
@@ -55,7 +66,8 @@ def _scan(config: RadarConfig, state_dir: Path, client: GithubClient) -> int:
             if key not in found:
                 try:
                     found[key] = client.get_repository(full_name)
-                except GithubError:
+                except GithubError as error:
+                    errors.append({"stage": "repository", "repo": full_name, "error": str(error)})
                     continue
     for key, issues in discovered_issues.items():
         if key in found:
@@ -68,6 +80,7 @@ def _scan(config: RadarConfig, state_dir: Path, client: GithubClient) -> int:
             client.enrich(candidate)
         except GithubError as error:
             candidate.reasons.append(f"enrichment warning: {error}")
+            errors.append({"stage": "enrichment", "repo": candidate.full_name, "error": str(error)})
         candidates.append(score_candidate(candidate, config, previous.get(candidate.full_name.lower())))
     candidates.sort(key=lambda item: (item.contribution_score, item.project_score, item.stars), reverse=True)
     stamp = datetime.now().astimezone().date().isoformat()
@@ -77,18 +90,31 @@ def _scan(config: RadarConfig, state_dir: Path, client: GithubClient) -> int:
         candidates,
         (config.project_score, config.contribution_score, config.minimum_stars),
     )
-    write_json(reports / f"discovery-{stamp}.json", {"generated_at": datetime.now(timezone.utc).isoformat(), "candidates": [item.to_dict() for item in candidates]})
-    write_json(
-        state_dir / "state.json",
-        {"updated_at": datetime.now(timezone.utc).isoformat(), "repositories": {item.full_name.lower(): {"stars": item.stars, "forks": item.forks} for item in candidates}},
-    )
     eligible = [
         item for item in candidates
         if is_eligible(item, config.project_score, config.contribution_score, config.minimum_stars)
     ]
-    print(f"Scanned {len(candidates)} candidates; {len(eligible)} eligible for agent review")
+    status = ("PARTIAL" if candidates else "FAILED") if errors else ("SUCCESS" if eligible else "NO_CANDIDATES")
+    generated = datetime.now(timezone.utc)
+    payload = {"generated_at": generated.isoformat(), "status": status, "errors": errors,
+               "eligible_count": len(eligible) if not errors else 0,
+               "candidates": [item.to_dict() for item in candidates]}
+    write_json(reports / f"discovery-{stamp}.json", payload)
+    write_json(state_dir / "runs" / f"{generated.strftime('%Y%m%dT%H%M%S%fZ')}.json", payload)
+    if not errors:
+        write_json(state_dir / "state.json", {
+            "updated_at": generated.isoformat(),
+            "repositories": {item.full_name.lower(): {"stars": item.stars, "forks": item.forks} for item in candidates},
+        })
+    else:
+        with (reports / f"discovery-{stamp}.md").open("a", encoding="utf-8") as report:
+            report.write("\n## Incomplete scan — do not start contributions\n\n")
+            for error in errors:
+                report.write(f"- {error['stage']}: {error['error']}\n")
+        print(f"{status}: {len(errors)} collection errors; previous complete baseline preserved")
+    print(f"Scanned {len(candidates)} candidates; {len(eligible) if not errors else 0} eligible for agent review")
     print(reports / f"discovery-{stamp}.md")
-    return 0
+    return 1 if errors else 0
 
 
 def _audit(config: RadarConfig, state_dir: Path, client: GithubClient, owner: str) -> int:

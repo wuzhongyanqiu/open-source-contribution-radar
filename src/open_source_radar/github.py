@@ -25,10 +25,13 @@ class GithubClient:
             elapsed = time.monotonic() - self._last_search_request
             if self._last_search_request and elapsed < self.search_interval_seconds:
                 time.sleep(self.search_interval_seconds - elapsed)
-        command = [self.executable, "api", "--method", "GET", endpoint]
+        command = [self.executable, "api", "--method", "GET", "--hostname", "github.com", endpoint]
         for key, value in (fields or {}).items():
             command.extend(["-f", f"{key}={value}"])
-        result = subprocess.run(command, check=False, capture_output=True, text=True)
+        try:
+            result = subprocess.run(command, check=False, capture_output=True, text=True, timeout=45)
+        except subprocess.TimeoutExpired as error:
+            raise GithubError(f"GitHub request timed out for {endpoint}") from error
         if endpoint.startswith("search/"):
             self._last_search_request = time.monotonic()
         if result.returncode != 0:
@@ -44,6 +47,8 @@ class GithubClient:
             "search/repositories",
             {"q": query, "sort": "updated", "order": "desc", "per_page": str(limit)},
         )
+        if payload.get("incomplete_results"):
+            raise GithubError("GitHub repository search returned incomplete results")
         return [self._repository(item) for item in payload.get("items", [])]
 
     def get_repository(self, full_name: str) -> RepositoryCandidate:
@@ -54,6 +59,8 @@ class GithubClient:
             "search/issues",
             {"q": query, "sort": "updated", "order": "desc", "per_page": str(limit)},
         )
+        if payload.get("incomplete_results"):
+            raise GithubError("GitHub issue search returned incomplete results")
         results = []
         for item in payload.get("items", []):
             repository_url = str(item.get("repository_url") or "")

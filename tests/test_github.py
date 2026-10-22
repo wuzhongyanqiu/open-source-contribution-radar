@@ -6,6 +6,13 @@ from open_source_radar.github import GithubClient, GithubError
 
 
 class GithubClientTest(unittest.TestCase):
+    def test_incomplete_search_is_not_an_empty_success(self) -> None:
+        client = GithubClient()
+        client.request = lambda *args, **kwargs: {"incomplete_results": True, "items": []}
+        for method in [client.search_repositories, client.search_issues]:
+            with self.assertRaisesRegex(GithubError, "incomplete"):
+                method("test", 5)
+
     @patch("open_source_radar.github.subprocess.run")
     def test_request_uses_get_and_parses_json(self, run) -> None:
         run.return_value.returncode = 0

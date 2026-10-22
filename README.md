@@ -30,6 +30,8 @@ PYTHONPATH=src python3 -m open_source_radar audit-account --owner wuzhongyanqiu
 
 Reports are written to `.radar/reports/`. Edit [`radar.json`](radar.json) to tune discovery queries, thresholds, exclusions, and protected repositories.
 
+Search thresholds use `stars:>=N`, not exact-star matches. Each scan records `SUCCESS`, `NO_CANDIDATES`, `PARTIAL`, or `FAILED`, collection errors, and an eligible count. Failed or partial scans return nonzero, authorize no contribution, and preserve the previous complete momentum baseline. Every attempt is retained in `.radar/runs/`; same-day retries do not erase failure history. GitHub calls target github.com with a 45-second per-request timeout; incomplete GitHub search responses are failures.
+
 ## Contribution workflow
 
 The deterministic scanner stops at a ranked queue. An agent working from that queue must follow [`CONTRIBUTION_POLICY.md`](CONTRIBUTION_POLICY.md): inspect upstream instructions, verify that an issue is still available, work in isolation, run the repository's checks, and create a Draft PR with evidence. A failed gate means no PR.
@@ -41,7 +43,7 @@ The deterministic scanner stops at a ranked queue. An agent working from that qu
 ## Development
 
 ```bash
-python3 -m unittest discover -s tests -v
+PYTHONPATH=src python3 -m unittest discover -s tests -v
 python3 -m compileall -q src tests
 ```
 
