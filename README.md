@@ -36,6 +36,10 @@ Search thresholds use `stars:>=N`, not exact-star matches. Each scan records `SU
 
 The deterministic scanner stops at a ranked queue. An agent working from that queue must follow [`CONTRIBUTION_POLICY.md`](CONTRIBUTION_POLICY.md): inspect upstream instructions, verify that an issue is still available, work in isolation, run the repository's checks, and create a Draft PR with evidence. A failed gate means no PR.
 
+The daily agent follows [`docs/DAILY_WORKFLOW.md`](docs/DAILY_WORKFLOW.md): revisit prior contributions, handle actionable review feedback, discover candidates, validate one bounded change, and track its upstream outcome. It searches existing issues; it does not automatically file new issues. A closed PR is not necessarily a rejected contribution: code incorporated by a merged replacement must be recorded separately from direct merges.
+
+The scanner applies the queries and excluded labels in `radar.json`. Lifecycle review, comment interpretation, supplementary discovery, and publication checks are agent responsibilities, not additional Python CLI commands or programmatically enforced gates. Scheduler prompts and schedules remain in Codex; this repository versions the workflow they must follow. Runtime reports stay ignored under `.radar/`.
+
 ## Account audit semantics
 
 `delete_candidate` is evidence, not authorization. It is reserved for empty or one-commit repositories with no audience or unique content. `archive` is used for stale forks or completed historical work. The tool intentionally has no delete command.

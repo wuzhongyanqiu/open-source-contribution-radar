@@ -15,7 +15,12 @@
     ],
     "excluded_owners": ["wuzhongyanqiu"],
     "excluded_repositories": [],
-    "excluded_issue_labels": ["security", "bounty", "hackathon", "needs-human", "hive/likely-done"],
+    "excluded_issue_labels": [
+      "security", "bounty", "hackathon", "needs-human", "hive/likely-done",
+      "hold", "claimed", "in-progress", "hive/claimed-by-scanner",
+      "hive/covered-by-pr", "stage/030-pr-in-progress", "stage/040-covered-by-pr",
+      "hive/advisory", "hive/selfreport"
+    ],
     "max_results_per_query": 20,
     "max_candidates": 20
   },

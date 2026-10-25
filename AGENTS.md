@@ -2,6 +2,8 @@
 
 This repository owns discovery, scoring, account auditing, and contribution safety policy. It does not own scheduler state or credentials.
 
+Scheduled contribution runs must read `docs/DAILY_WORKFLOW.md` before scanning. Review feedback and outcomes for this workflow's existing contributions before selecting new work.
+
 ## Development rules
 
 - Keep discovery and scoring deterministic and explainable.
