@@ -58,6 +58,9 @@ def _scan(config: RadarConfig, state_dir: Path, client: GithubClient) -> int:
             errors.append({"stage": "issue_search", "query": query, "error": str(error)})
             continue
         for full_name, issue in results:
+            owner = full_name.split("/", 1)[0].lower()
+            if owner in config.excluded_owners or full_name.lower() in config.excluded_repositories:
+                continue
             issue_labels = {label.lower() for label in issue.labels}
             if issue_labels & config.excluded_issue_labels:
                 continue
@@ -72,6 +75,8 @@ def _scan(config: RadarConfig, state_dir: Path, client: GithubClient) -> int:
     for key, issues in discovered_issues.items():
         if key in found:
             found[key].issues = sorted(issues.values(), key=lambda item: item.updated_at, reverse=True)
+    # Issue discovery must obey the same repository policy as repository search.
+    found = {key: candidate for key, candidate in found.items() if not candidate.archived and not candidate.fork}
     previous = _load_previous(state_dir / "state.json")
     shortlist = sorted(found.values(), key=lambda item: (bool(item.issues), item.stars, item.pushed_at), reverse=True)[: config.max_candidates]
     candidates = []
@@ -89,10 +94,12 @@ def _scan(config: RadarConfig, state_dir: Path, client: GithubClient) -> int:
         reports / f"discovery-{stamp}.md",
         candidates,
         (config.project_score, config.contribution_score, config.minimum_stars),
+        scan_complete=not errors,
+        max_idle_days=config.stale_days,
     )
     eligible = [
         item for item in candidates
-        if is_eligible(item, config.project_score, config.contribution_score, config.minimum_stars)
+        if is_eligible(item, config.project_score, config.contribution_score, config.minimum_stars, max_idle_days=config.stale_days)
     ]
     status = ("PARTIAL" if candidates else "FAILED") if errors else ("SUCCESS" if eligible else "NO_CANDIDATES")
     generated = datetime.now(timezone.utc)

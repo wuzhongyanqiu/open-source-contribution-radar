@@ -15,22 +15,23 @@ def write_json(path: Path, payload: dict[str, Any]) -> None:
     temporary.replace(path)
 
 
-def write_discovery_report(path: Path, candidates: list[RepositoryCandidate], thresholds: tuple[int, int, int]) -> None:
+def write_discovery_report(path: Path, candidates: list[RepositoryCandidate], thresholds: tuple[int, int, int], *, scan_complete: bool = True, max_idle_days: int = 180) -> None:
     project_threshold, contribution_threshold, minimum_stars = thresholds
     lines = [
         "# Open-source contribution radar",
         "",
         f"Generated: {datetime.now().astimezone().isoformat()}",
         "",
-        "Only candidates meeting both configured thresholds are eligible for agent review. Eligibility is not permission to publish.",
+        "Only candidates meeting configured thresholds and recent activity are eligible for agent review. Eligibility is not permission to publish.",
+        "" if scan_complete else "**INCOMPLETE SCAN: all contribution decisions are blocked. The previous complete baseline is preserved.**",
         "",
     ]
     for index, candidate in enumerate(candidates, 1):
-        eligible = is_eligible(candidate, project_threshold, contribution_threshold, minimum_stars)
+        eligible = scan_complete and is_eligible(candidate, project_threshold, contribution_threshold, minimum_stars, max_idle_days=max_idle_days)
         lines.extend([
             f"## {index}. [{candidate.full_name}]({candidate.url})",
             "",
-            f"- Decision: {'ELIGIBLE_FOR_REVIEW' if eligible else 'OBSERVE'}",
+            f"- Decision: {'BLOCKED_INCOMPLETE_SCAN' if not scan_complete else 'ELIGIBLE_FOR_REVIEW' if eligible else 'OBSERVE'}",
             f"- Project score: {candidate.project_score}/100",
             f"- Contribution score: {candidate.contribution_score}/100",
             f"- Language: {candidate.language or 'unknown'}; stars: {candidate.stars}; forks: {candidate.forks}",
@@ -70,7 +71,13 @@ def write_account_report(path: Path, owner: str, repositories: list[AccountRepos
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-def is_eligible(candidate: RepositoryCandidate, project_threshold: int, contribution_threshold: int, minimum_stars: int = 0) -> bool:
+def is_eligible(candidate: RepositoryCandidate, project_threshold: int, contribution_threshold: int, minimum_stars: int = 0, *, max_idle_days: int = 180, now: datetime | None = None) -> bool:
+    try:
+        pushed_at = datetime.fromisoformat(candidate.pushed_at.replace("Z", "+00:00"))
+        age = ((now or datetime.now(timezone.utc)) - pushed_at).days
+        recently_active = 0 <= age <= max_idle_days
+    except (ValueError, TypeError):
+        recently_active = False
     return (
         candidate.project_score >= project_threshold
         and candidate.contribution_score >= contribution_threshold
@@ -78,4 +85,7 @@ def is_eligible(candidate: RepositoryCandidate, project_threshold: int, contribu
         and bool(candidate.issues)
         and bool(candidate.license_id)
         and candidate.license_id != "NOASSERTION"
+        and not candidate.archived
+        and not candidate.fork
+        and recently_active
     )

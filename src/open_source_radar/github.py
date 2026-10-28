@@ -75,8 +75,17 @@ class GithubClient:
         owner, name = candidate.full_name.split("/", 1)
         root = self.request(f"repos/{quote(owner)}/{quote(name)}/contents")
         names = {str(item.get("name", "")).lower() for item in root if isinstance(item, dict)}
-        candidate.has_contributing = any(name.startswith("contributing") for name in names) or ".github" in names
-        candidate.has_ci = ".github" in names or any(name.startswith((".travis", "azure-pipelines")) for name in names)
+        candidate.has_contributing = any(name.startswith("contributing") for name in names)
+        candidate.has_ci = any(name.startswith((".travis", "azure-pipelines")) for name in names)
+        # A .github directory may contain only templates or funding metadata.
+        # Award policy/CI signals only for concrete files, and propagate API failures.
+        if ".github" in names:
+            entries = self.request(f"repos/{quote(owner)}/{quote(name)}/contents/.github")
+            github_names = {str(item.get("name", "")).lower(): item.get("type") for item in entries}
+            candidate.has_contributing |= any(path.startswith("contributing") and kind == "file" for path, kind in github_names.items())
+            if github_names.get("workflows") == "dir":
+                workflows = self.request(f"repos/{quote(owner)}/{quote(name)}/contents/.github/workflows")
+                candidate.has_ci |= any(item.get("type") == "file" and str(item.get("name", "")).lower().endswith((".yml", ".yaml")) for item in workflows)
         candidate.has_tests = any(name in names for name in ("test", "tests", "spec", "specs"))
         return candidate
 

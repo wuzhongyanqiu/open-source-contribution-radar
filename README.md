@@ -54,3 +54,7 @@ python3 -m compileall -q src tests
 ## License
 
 MIT
+
+## Evidence and decision quality
+
+Discovery paths share the owner/repository exclusion and archived/fork policy. Community scoring checks actual contribution guides and workflow files; a `.github` directory alone earns neither signal. Eligibility also enforces the configured maximum age since last push, regardless of scores. A partial scan blocks every contribution decision in both JSON and Markdown and preserves the previous complete baseline. Workflow presence is a discovery signal, not evidence that CI passed or that maintainers accept a contribution.

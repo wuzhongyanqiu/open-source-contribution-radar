@@ -57,6 +57,17 @@ class ScoringTest(unittest.TestCase):
         self.assertTrue(any("activity" in reason for reason in result.reasons))
         self.assertTrue(is_eligible(result, 55, 55))
 
+    def test_stale_or_unknown_activity_cannot_be_bought_with_high_scores(self) -> None:
+        candidate = RepositoryCandidate('example/old', 'https://github.com/example/old', '', 'Python', [], 50000, 1000, 10,
+            '2025-01-01T00:00:00Z', '', 'MIT', False, False, issues=[IssueCandidate(1, 'Fix', '', [], '', '')],
+            project_score=100, contribution_score=100)
+        self.assertFalse(is_eligible(candidate, 55, 55, 50, max_idle_days=120, now=NOW))
+        candidate.pushed_at = ''
+        self.assertFalse(is_eligible(candidate, 55, 55, now=NOW))
+        candidate.pushed_at = '2026-10-07T00:00:00Z'
+        candidate.archived = True
+        self.assertFalse(is_eligible(candidate, 55, 55, now=NOW))
+
     def test_candidate_without_issue_is_not_eligible(self) -> None:
         candidate = RepositoryCandidate(
             full_name="example/agent",

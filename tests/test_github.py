@@ -6,6 +6,28 @@ from open_source_radar.github import GithubClient, GithubError
 
 
 class GithubClientTest(unittest.TestCase):
+    def test_github_templates_do_not_claim_contributing_or_ci(self) -> None:
+        candidate = GithubClient._repository({"full_name": "example/project", "html_url": "https://github.com/example/project"})
+        client = GithubClient()
+        client.request = lambda endpoint: ([{"name": ".github", "type": "dir"}] if endpoint.endswith("/contents") else [{"name": "ISSUE_TEMPLATE", "type": "dir"}])
+        client.enrich(candidate)
+        self.assertFalse(candidate.has_ci)
+        self.assertFalse(candidate.has_contributing)
+
+    def test_actual_workflow_and_contributing_files_are_detected(self) -> None:
+        candidate = GithubClient._repository({"full_name": "example/project", "html_url": "https://github.com/example/project"})
+        client = GithubClient()
+        def request(endpoint):
+            if endpoint.endswith("/contents"):
+                return [{"name": ".github", "type": "dir"}]
+            if endpoint.endswith("/.github"):
+                return [{"name": "CONTRIBUTING.md", "type": "file"}, {"name": "workflows", "type": "dir"}]
+            return [{"name": "tests.yml", "type": "file"}]
+        client.request = request
+        client.enrich(candidate)
+        self.assertTrue(candidate.has_ci)
+        self.assertTrue(candidate.has_contributing)
+
     def test_incomplete_search_is_not_an_empty_success(self) -> None:
         client = GithubClient()
         client.request = lambda *args, **kwargs: {"incomplete_results": True, "items": []}
