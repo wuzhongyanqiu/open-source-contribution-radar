@@ -10,6 +10,7 @@ from .config import RadarConfig, load_config
 from .github import GithubClient, GithubError
 from .report import is_eligible, write_account_report, write_discovery_report, write_json
 from .scoring import audit_repository, score_candidate
+from .superagent import build_ticket_feed
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -108,6 +109,10 @@ def _scan(config: RadarConfig, state_dir: Path, client: GithubClient) -> int:
                "candidates": [item.to_dict() for item in candidates]}
     write_json(reports / f"discovery-{stamp}.json", payload)
     write_json(state_dir / "runs" / f"{generated.strftime('%Y%m%dT%H%M%S%fZ')}.json", payload)
+    write_json(
+        state_dir / "superagent" / "tickets.json",
+        build_ticket_feed(candidates, config, generated, scan_complete=not errors, errors=errors),
+    )
     if not errors:
         write_json(state_dir / "state.json", {
             "updated_at": generated.isoformat(),

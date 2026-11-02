@@ -30,6 +30,12 @@ PYTHONPATH=src python3 -m open_source_radar audit-account --owner wuzhongyanqiu
 
 Reports are written to `.radar/reports/`. Edit [`radar.json`](radar.json) to tune discovery queries, thresholds, exclusions, and protected repositories.
 
+Each scan also writes `.radar/superagent/tickets.json`. This is a stable, read-only
+Router inbox for the workspace control plane: eligible issues become candidate
+Tickets, while an incomplete scan emits only a blocking diagnostic Ticket. The
+feed never authorizes publication; Draft PR creation, marking ready, merging,
+force-pushing and deletion remain outside the feed's authority.
+
 Search thresholds use `stars:>=N`, not exact-star matches. Each scan records `SUCCESS`, `NO_CANDIDATES`, `PARTIAL`, or `FAILED`, collection errors, and an eligible count. Failed or partial scans return nonzero, authorize no contribution, and preserve the previous complete momentum baseline. Every attempt is retained in `.radar/runs/`; same-day retries do not erase failure history. GitHub calls target github.com with a 45-second per-request timeout; incomplete GitHub search responses are failures.
 
 ## Contribution workflow
