@@ -7,7 +7,7 @@ name = "open-source-contribution-radar"
 version = "0.1.0"
 description = "Discover valuable open-source projects and identify high-quality contribution opportunities."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [{ name = "wuzhongyanqiu" }]
 keywords = ["open-source", "github", "contributions", "automation"]
